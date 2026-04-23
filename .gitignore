@@ -1,0 +1,14 @@
+.DS_Store
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+
+# Generated docs/artifacts
+README.html
+README_files/
+plots/
