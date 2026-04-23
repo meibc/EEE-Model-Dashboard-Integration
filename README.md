@@ -2,7 +2,7 @@
 
 This model captures socio-behavioral and stigma-related dynamics that shape HIV epidemiological outcomes for men who have sex with men (MSM).
 
-This repository contains the prediction runtime that will be integrated into the StigmaScope dashboard for the Ending the HIV Epidemic initiative.
+This repository contains the prediction runtime that will be integrated into the [StigmaScope.com](https://stigmascope.com) dashboard for the Ending the HIV Epidemic initiative.
 
 ## Overview
 ### Model Diagram
