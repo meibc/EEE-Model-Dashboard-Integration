@@ -1,31 +1,47 @@
-# EEE Prediction Runtime
+# System Dynamics Prediction Model for StigmaScope
 
-Inference runtime for SEM -> CDC projections using a single standardized input file.
+This model captures socio-behavioral and stigma-related dynamics that shape HIV epidemiological outcomes for men who have sex with men (MSM).
+
+This repository contains the prediction runtime that will be integrated into the StigmaScope dashboard for the Ending the HIV Epidemic initiative.
 
 ## Overview
+### Model Diagram
 
-This repo runs forward prediction for:
-- SEM trajectories (testing, PrEP use, risk behavior, and related SEM variables)
-- CDC outputs (incidence, diagnosed, undiagnosed, prep-on count)
+![System dynamics model diagram](EEE_slide_model.png)
 
-It supports:
-- deterministic runs
-- uncertainty runs (Monte Carlo sampling)
-- intervention scenarios (state and relationship intervention codebooks)
-- sanity plotting
+The runtime produces forward projections for all variables in the socio-behavioral model (SEM) and population dynamics model (Epi).
+
+### Socio-behavioral variables (proportion in population)
+
+- anticipated healthcare stigma
+- general social stigma
+- family stigma
+- seeing a healthcare provider annually
+- sexual orientation disclosure to a healthcare provider
+- risk behavior
+- use of PrEP in the past year
+- HIV testing in the past year
+
+### Population dynamics outputs (counts)
+
+- annual PrEP use
+- HIV diagnoses
+- estimated HIV incidence
+
+The runtime reads prepared standardized inputs and parameters, and supports deterministic and uncertainty prediction for user-specified forecast years under baseline and intervention scenarios.
 
 ## Runtime Flow: Inputs -> Model -> Outputs
 
 ### 1. Input
 
-The runtime expects one file:
+Required file:
 - `standardized_input.npz`
 
-No other raw model artifact files are required at runtime.
+Details on the file structure are below. 
 
 ### 2. Model
 
-Main execution path:
+Execution path:
 - `cli.py` parses arguments
 - `runner.py` dispatches deterministic or uncertainty mode
 - `input/standardized_runtime.py` reads `standardized_input.npz`
@@ -38,39 +54,66 @@ Runtime returns in-memory dataclasses from `output/types.py`:
 - deterministic: `JointOutput`
 - uncertainty: `UncertaintyOutput`
 
-Optional:
+Optional outputs:
 - `--save <path>` writes pickle output
 - `--plot` writes PNGs
 
 ## Project Structure
 
+### Primary Runtime Files
+- `standardized_input.npz`: required runtime input
 - `cli.py`: command-line entrypoint
 - `config.py`: runtime configuration and validation
 - `runner.py`: orchestration (`run_prediction`)
 - `alignment.py`: year alignment and CDC input derivation utilities
-- `input/`
-- `input/loaders.py`: standardized-only loading adapters
-- `input/standardized_runtime.py`: bundle schema readers/loaders
-- `prediction/`
-- `prediction/joint.py`: deterministic + uncertainty runners
-- `prediction/intervention.py`: intervention application logic
-- `prediction/codebooks.py`: intervention code definitions
-- `prediction/epi_predictor.py`: CDC prediction equations
-- `output/types.py`: output dataclasses
-- `output/io.py`: save/load helpers
 - `plotting.py`: six-panel plotting per unit
-- `standardized_input.npz`: required runtime input
+- `requirements.txt`: dependencies
+
+### Source Tree
+
+```text
+.
+├── cli.py
+├── config.py
+├── runner.py
+├── alignment.py
+├── plotting.py
+├── requirements.txt
+├── standardized_input.npz
+├── input/
+│   ├── __init__.py
+│   ├── loaders.py
+│   └── standardized_runtime.py
+├── prediction/
+│   ├── __init__.py
+│   ├── codebooks.py
+│   ├── epi_predictor.py
+│   ├── intervention.py
+│   ├── joint.py
+│   ├── sem_predictor.py
+│   └── transforms.py
+├── output/
+│   ├── __init__.py
+│   ├── io.py
+│   └── types.py
+└── data/
+    ├── __init__.py
+    ├── params_cdc.py
+    ├── params_sem.py
+    └── unit.py
+```
 
 ## `standardized_input.npz` Schema
 
-Think of the file as 5 blocks:
+### Schema Blocks
 - index metadata (what each axis means)
 - year axes (what timelines exist)
-- SEM observed + SEM model parameters
-- CDC raw input series
-- CDC posterior parameter samples
+- SEM observed (for plotting)
+- SEM parameters (for prediction)
+- CDC raw input series (for plotting)
+- CDC posterior parameter samples (for uncertainty prediction)
 
-Axis symbols used below:
+### Axis Symbols
 - `G`: number of geographies
 - `M`: number of SEM variables
 - `K`: number of CDC raw variables
@@ -125,15 +168,34 @@ pip install -r requirements.txt
 
 ## Run Commands
 
-All commands assume `standardized_input.npz` exists at repo root.
+- Assumption: `standardized_input.npz` exists at repo root.
 
-Deterministic baseline:
+### CLI Options
+
+- `--standardized-input <path>`: path to standardized input file (default: `standardized_input.npz`)
+- `--mode {deterministic,uncertainty}`: run type
+- `--scenario-mode {baseline,intervention}`: scenario to run
+- `--target-end-year <year>`: truncate forecast horizon to this year (must be <= max year in input)
+- `--units <id1 id2 ...>`: run only selected geographies (for example `NY CA`)
+- `--n-samples <int>`: Monte Carlo sample count (uncertainty mode)
+- `--seed <int>`: random seed (uncertainty mode)
+- `--state-codes <code1 code2 ...>`: state intervention codes (intervention scenario)
+- `--relationship-codes <code1 code2 ...>`: relationship intervention codes (intervention scenario)
+- `--save <path>`: save runtime output as pickle
+- `--plot`: generate plots
+- `--plot-dir <path>`: directory for generated plots (default: `plots`)
+- `--plot-units <id1 id2 ...>`: plot subset of units (defaults to run units)
+- `--plot-compare-baseline`: overlay opposite scenario in plots
+
+### Examples
+
+Deterministic baseline run:
 
 ```bash
 python -m cli --mode deterministic --scenario-mode baseline --units NY
 ```
 
-Deterministic intervention:
+Deterministic intervention run:
 
 ```bash
 python -m cli \
@@ -144,13 +206,13 @@ python -m cli \
   --relationship-codes weaken_stigma_to_hivtest
 ```
 
-Uncertainty:
+Uncertainty run:
 
 ```bash
 python -m cli --mode uncertainty --scenario-mode baseline --units NY --n-samples 500 --seed 123
 ```
 
-Use a custom standardized file path:
+Custom standardized input path:
 
 ```bash
 python -m cli --standardized-input /path/to/standardized_input.npz --mode deterministic --units NY
@@ -158,13 +220,13 @@ python -m cli --standardized-input /path/to/standardized_input.npz --mode determ
 
 ## Plotting
 
-Baseline plot:
+### Baseline Plot
 
 ```bash
 python -m cli --mode deterministic --scenario-mode baseline --units NY --plot --plot-dir plots
 ```
 
-Intervention with baseline overlay:
+### Intervention With Baseline Overlay
 
 ```bash
 python -m cli \
@@ -176,13 +238,15 @@ python -m cli \
   --plot --plot-compare-baseline --plot-dir plots
 ```
 
-Uncertainty plot:
+### Uncertainty Plot
 
 ```bash
 python -m cli --mode uncertainty --units NY --n-samples 100 --plot --plot-dir plots
 ```
 
-Each figure has 6 panels:
+### Plot Contents
+
+- Each figure has 6 panels:
 - SEM testing
 - SEM prep use
 - SEM risk behavior
@@ -190,13 +254,13 @@ Each figure has 6 panels:
 - CDC diagnosed
 - CDC prep on
 
-Output filenames:
+### Output Filenames
 - no comparison: `plots/<UNIT>_<mode>_<scenario>.png`
 - comparison: `plots/<UNIT>_<mode>_comparison.png`
 
 ## Interventions
 
-Intervention definitions live in:
+Definition file:
 - `prediction/codebooks.py`
 
 State codes apply variable-level shifts.
@@ -204,15 +268,61 @@ Relationship codes modify SEM coupling terms.
 
 If a code references a variable not present in `sem_v_names`, that intervention is skipped.
 
+### Intervention Examples
+
+State intervention only:
+
+```bash
+python -m cli \
+  --mode deterministic \
+  --scenario-mode intervention \
+  --units NY \
+  --state-codes reduce_ahs
+```
+
+Relationship intervention only:
+
+```bash
+python -m cli \
+  --mode deterministic \
+  --scenario-mode intervention \
+  --units NY \
+  --relationship-codes weaken_stigma_to_hivtest
+```
+
+Combined state + relationship interventions:
+
+```bash
+python -m cli \
+  --mode deterministic \
+  --scenario-mode intervention \
+  --units NY \
+  --state-codes reduce_ahs increase_seehcp \
+  --relationship-codes weaken_stigma_to_hivtest
+```
+
+Intervention in uncertainty mode:
+
+```bash
+python -m cli \
+  --mode uncertainty \
+  --scenario-mode intervention \
+  --units NY \
+  --n-samples 500 \
+  --seed 123 \
+  --state-codes reduce_ahs \
+  --relationship-codes weaken_stigma_to_hivtest
+```
+
 ## Troubleshooting
 
-Missing input file:
+### Missing Input File
 - error: `Missing standardized input: ...`
 - fix: place `standardized_input.npz` at repo root or pass `--standardized-input <path>`
 
-Target year too large:
+### Target Year Too Large
 - error: `target_end_year=... exceeds standardized_input max year ...`
 - fix: lower `--target-end-year` or use a standardized file with longer horizon
 
-Matplotlib cache warning:
+### Matplotlib Cache Warning
 - harmless in restricted environments; plots still save successfully
