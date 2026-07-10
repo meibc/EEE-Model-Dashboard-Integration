@@ -7,7 +7,12 @@ from scipy.interpolate import interp1d
 
 
 def hazard_proxy(hivtest: np.ndarray) -> np.ndarray:
-    """Convert testing probability to a bounded hazard-like proxy."""
+    """Legacy helper: convert testing probability to a bounded hazard-like proxy.
+
+    The v7 transition runtime keeps the CDCInputs field name `tau` for
+    compatibility, but stores direct hivtest12 / p_test there instead of this
+    transformed hazard.
+    """
     p = np.clip(np.asarray(hivtest, dtype=float), 1e-9, 1 - 1e-9)
     return -np.log1p(-p)
 
@@ -135,7 +140,9 @@ def build_cdc_inputs_from_sem(
     hivtest = align_to_years(sem_years, hivtest, model_years)
     prep_on = align_to_years(sem_years, prep_on, model_years)
     risk_behavior = align_to_years(sem_years, risk_behavior, model_years)
-    tau = hazard_proxy(hivtest)
+    # Keep the legacy name `tau` for compatibility, but v7 uses direct
+    # hivtest12 / p_test rather than the old hazard-transformed proxy.
+    tau = np.clip(hivtest, 1e-6, 1 - 1e-6)
 
     n_elig = np.asarray(unit.get_cdc(n_elig_var), dtype=float)
     if len(n_elig) != len(model_years):

@@ -165,22 +165,32 @@ class StandardizedCDCParamsLoader:
 
     def load_point_estimates(self, unit_id: str) -> CDCParams:
         i = self._idx(unit_id)
+        risk0 = float(np.asarray(self._data.get("cdc_risk0", np.ones(len(self.geo_names)))[i], dtype=float))
+        post = self._data.get("cdc_post_multiplier")
+        post_multiplier = 1.0 if post is None else float(np.asarray(post[:, i], dtype=float).mean())
         return CDCParams(
             beta=float(np.asarray(self._data["cdc_beta"][:, i], dtype=float).mean()),
             alpha=float(np.asarray(self._data["cdc_alpha"][:, i], dtype=float).mean()),
             kdx=float(np.asarray(self._data["cdc_kdx"][:, i], dtype=float).mean()),
             U0=float(np.asarray(self._data["cdc_U0"][:, i], dtype=float).mean()),
             kappa_prep=float(np.asarray(self._data["cdc_kappa_prep"][i], dtype=float)),
+            risk0=risk0,
+            post_multiplier=post_multiplier,
         )
 
     def load_sample(self, sample_idx: int, unit_id: str) -> CDCParams:
         i = self._idx(unit_id)
+        risk0 = float(np.asarray(self._data.get("cdc_risk0", np.ones(len(self.geo_names)))[i], dtype=float))
+        post = self._data.get("cdc_post_multiplier")
+        post_multiplier = 1.0 if post is None else float(np.asarray(post[sample_idx, i], dtype=float))
         return CDCParams(
             beta=float(np.asarray(self._data["cdc_beta"][sample_idx, i], dtype=float)),
             alpha=float(np.asarray(self._data["cdc_alpha"][sample_idx, i], dtype=float)),
             kdx=float(np.asarray(self._data["cdc_kdx"][sample_idx, i], dtype=float)),
             U0=float(np.asarray(self._data["cdc_U0"][sample_idx, i], dtype=float)),
             kappa_prep=float(np.asarray(self._data["cdc_kappa_prep"][i], dtype=float)),
+            risk0=risk0,
+            post_multiplier=post_multiplier,
         )
 
 

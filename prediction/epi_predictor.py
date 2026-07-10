@@ -15,11 +15,19 @@ class CDCPredictor:
         T = len(inputs.years)
 
         prep_on_count = p.kappa_prep * inputs.prep_on * inputs.N_elig
-        prep_off_count = inputs.N_elig - prep_on_count
 
-        n_elig_safe = np.maximum(inputs.N_elig, 1e-12)
-        incidence = p.beta * ((prep_off_count / n_elig_safe) + (p.alpha * inputs.risk_behavior)) * inputs.no_vs
-        delta = 1 - np.exp(-p.kdx * inputs.tau)
+        # v7 incidence equation.  inputs.prep_on is the SEM prep_used
+        # proportion; prep_off is therefore a proportion, not a count.
+        prep_off = np.clip(1 - inputs.prep_on, 1e-6, 1)
+        risk0 = max(float(p.risk0), 0.05)
+        risk_ratio = np.clip(inputs.risk_behavior / risk0, 0.5, 3.0)
+        incidence = p.beta * inputs.no_vs * prep_off * np.power(risk_ratio, p.alpha)
+
+        # v7 diagnosis equation.  The CDCInputs field is still named `tau`
+        # for compatibility, but contains direct hivtest12 / p_test.
+        post_indicator = (np.asarray(inputs.years, dtype=int) >= 2021).astype(float)
+        diagnosis_multiplier = 1 + post_indicator * (p.post_multiplier - 1)
+        delta = 1 - np.exp(-p.kdx * inputs.tau * diagnosis_multiplier)
 
         undiagnosed = np.zeros(T)
         diagnosed = np.zeros(T)
