@@ -13,12 +13,24 @@ README.html
 README_files/
 plots/
 
-# csv files 
+# csv files
 *.csv
 
-# image files 
+# image files
 *.png
 *.pdf
 
-# text files 
+# text files
 *.txt
+
+# Runtime/generated outputs
+outputs/
+output/*.pkl
+
+# Legacy standardized inputs; keep standardized_input_v8.npz tracked
+standardized_input.npz
+standardized_input_v7.npz
+standardized_input_v7_audit.txt
+
+# Local/source workbooks
+*.xlsx
