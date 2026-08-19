@@ -328,13 +328,20 @@ If a code references a variable not present in `sem_v_names`, that intervention 
 ### Current Relationship Intervention Codes
 
 - `weaken_ahs_to_prep`: weaken AHS -> PrEP pathway by 50%
-- `weaken_ahs_to_disclosure`: weaken AHS -> outness pathway by 50%
-- `strengthen_outness_to_prep`: strengthen outness -> PrEP linkage by 50%
-- `strengthen_outness_to_hivtest`: strengthen outness -> HIV testing linkage by 50%
-- `strengthen_seehcp_to_hivtest`: strengthen healthcare -> HIV testing linkage by 50%
 - `weaken_ahs_to_hivtest`: weaken AHS -> HIV testing pathway by 50%
 - `strengthen_seehcp_to_lower_ahs`: strengthen healthcare -> lower AHS pathway by 50%
-- `weaken_outness_to_ahs_feedback`: weaken outness -> AHS stigma feedback by 50%
+
+### Dashboard Scenario Presets
+
+The final dashboard scenario set is:
+
+1. `reduce_ahs`
+2. `reduce_gss`
+3. `reduce_family_stigma`
+4. `weaken_ahs_to_prep`
+5. `weaken_ahs_to_hivtest`
+6. `strengthen_seehcp_to_lower_ahs`
+7. combined stigma package: `reduce_ahs`, `reduce_gss`, `reduce_family_stigma`, and `weaken_ahs_to_prep`
 
 ### Intervention Examples
 
@@ -366,7 +373,7 @@ python -m cli \
   --scenario-mode intervention \
   --units NY \
   --state-codes reduce_ahs reduce_gss \
-  --relationship-codes weaken_ahs_to_prep weaken_ahs_to_hivtest
+  --relationship-codes weaken_ahs_to_prep
 ```
 
 Intervention in uncertainty mode:

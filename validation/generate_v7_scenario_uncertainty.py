@@ -47,33 +47,19 @@ SCENARIO_CODEBOOK = {
         "relationship_codes": ["weaken_ahs_to_prep"],
         "label": "Weaken AHS → PrEP pathway",
     },
-    "s5_weaken_ahs_to_disclosure": {
-        "state_codes": [],
-        "relationship_codes": ["weaken_ahs_to_disclosure"],
-        "label": "Weaken AHS → outness pathway",
-    },
-    "s6_weaken_ahs_to_hivtest": {
+    "s5_weaken_ahs_to_hivtest": {
         "state_codes": [],
         "relationship_codes": ["weaken_ahs_to_hivtest"],
         "label": "Weaken AHS → HIV testing pathway",
     },
-    "s7_strengthen_seehcp_to_lower_ahs": {
+    "s6_strengthen_seehcp_to_lower_ahs": {
         "state_codes": [],
         "relationship_codes": ["strengthen_seehcp_to_lower_ahs"],
         "label": "Strengthen healthcare → lower AHS pathway",
     },
-    "s8_weaken_outness_to_ahs_feedback": {
-        "state_codes": [],
-        "relationship_codes": ["weaken_outness_to_ahs_feedback"],
-        "label": "Weaken outness → AHS feedback",
-    },
-    "s9_combined_stigma_package": {
+    "s7_combined_stigma_package": {
         "state_codes": ["reduce_ahs", "reduce_gss", "reduce_family_stigma"],
-        "relationship_codes": [
-            "weaken_ahs_to_prep",
-            "weaken_ahs_to_disclosure",
-            "weaken_ahs_to_hivtest",
-        ],
+        "relationship_codes": ["weaken_ahs_to_prep"],
         "label": "Combined stigma package",
     },
 }
