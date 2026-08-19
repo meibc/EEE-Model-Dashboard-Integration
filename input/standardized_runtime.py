@@ -81,7 +81,16 @@ class StandardizedBundle:
         geos = self.geo_ids
 
         units = self.build_units()
-        fit_results = {geo: SimpleNamespace(J=np.asarray(d["sem_fit_J_last"][i], dtype=float)) for i, geo in enumerate(geos)}
+        reference_probs = np.asarray(d["sem_reference_probs"], dtype=float)
+        drift = np.asarray(d["sem_fit_drift"], dtype=float)
+        fit_results = {
+            geo: SimpleNamespace(
+                J=np.asarray(d["sem_fit_J_last"][i], dtype=float),
+                drift=np.asarray(drift[i], dtype=float),
+                reference_probs=reference_probs,
+            )
+            for i, geo in enumerate(geos)
+        }
         pred_results = {
             geo: SimpleNamespace(Ypred_trajectory=np.asarray(d["sem_pred"][i], dtype=float))
             for i, geo in enumerate(geos)
@@ -132,12 +141,16 @@ class StandardizedSEMParamsLoader:
     def load_point_estimates(self, unit_id: str) -> SEMParams:
         i = self._idx(unit_id)
         j = np.asarray(self._data["sem_J_samples"][:, i, :, :], dtype=float).mean(axis=0)
-        return SEMParams(J=j)
+        drift = np.asarray(self._data["sem_drift_samples"][:, i, :], dtype=float).mean(axis=0)
+        reference_probs = np.asarray(self._data["sem_reference_probs"], dtype=float)
+        return SEMParams(J=j, drift=drift, reference_probs=reference_probs)
 
     def load_sample(self, sample_idx: int, unit_id: str) -> SEMParams:
         i = self._idx(unit_id)
         j = np.asarray(self._data["sem_J_samples"][sample_idx, i, :, :], dtype=float)
-        return SEMParams(J=j)
+        drift = np.asarray(self._data["sem_drift_samples"][sample_idx, i, :], dtype=float)
+        reference_probs = np.asarray(self._data["sem_reference_probs"], dtype=float)
+        return SEMParams(J=j, drift=drift, reference_probs=reference_probs)
 
 
 class StandardizedCDCParamsLoader:

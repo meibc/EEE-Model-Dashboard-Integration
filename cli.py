@@ -21,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--standardized-input",
         type=str,
-        default="standardized_input.npz",
+        default="standardized_input_v8.npz",
         help="Path to consolidated standardized input (.npz)",
     )
     p.add_argument("--state-codes", nargs="*", default=[])

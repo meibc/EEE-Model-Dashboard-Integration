@@ -13,7 +13,7 @@ class RuntimeConfig:
     scenario_mode: Literal["baseline", "intervention"] = "baseline"
 
     # Standardized artifact
-    standardized_input_path: Path = Path("standardized_input.npz")
+    standardized_input_path: Path = Path("standardized_input_v8.npz")
 
     # Scope
     target_end_year: int | None = 2036
@@ -35,7 +35,7 @@ class RuntimeConfig:
     # Interventions
     state_intervention_codes: list[str] = field(default_factory=list)
     relationship_intervention_codes: list[str] = field(default_factory=list)
-    intervention_duration_steps: int = 1
+    intervention_duration_steps: int = 3
 
     # Optional save path (if set, caller can persist result)
     save_output_path: Path | None = None

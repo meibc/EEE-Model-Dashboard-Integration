@@ -42,37 +42,37 @@ SCENARIO_CODEBOOK = {
         "relationship_codes": [],
         "label": "Reduce family stigma",
     },
-    "s4_increase_seehcp": {
-        "state_codes": ["increase_seehcp"],
-        "relationship_codes": [],
-        "label": "Increase healthcare contact",
-    },
-    "s5_reduce_risk": {
-        "state_codes": ["reduce_risk"],
-        "relationship_codes": [],
-        "label": "Reduce risk behavior",
-    },
-    "s6_weaken_stigma_to_care": {
+    "s4_weaken_ahs_to_prep": {
         "state_codes": [],
-        "relationship_codes": ["weaken_stigma_to_care"],
-        "label": "Weaken stigma → care pathway",
+        "relationship_codes": ["weaken_ahs_to_prep"],
+        "label": "Weaken AHS → PrEP pathway",
     },
-    "s7_weaken_stigma_to_prep": {
+    "s5_weaken_ahs_to_disclosure": {
         "state_codes": [],
-        "relationship_codes": ["weaken_stigma_to_prep"],
-        "label": "Weaken stigma → PrEP pathway",
+        "relationship_codes": ["weaken_ahs_to_disclosure"],
+        "label": "Weaken AHS → outness pathway",
     },
-    "s8_weaken_stigma_to_hivtest": {
+    "s6_weaken_ahs_to_hivtest": {
         "state_codes": [],
-        "relationship_codes": ["weaken_stigma_to_hivtest"],
-        "label": "Weaken stigma → HIV test pathway",
+        "relationship_codes": ["weaken_ahs_to_hivtest"],
+        "label": "Weaken AHS → HIV testing pathway",
+    },
+    "s7_strengthen_seehcp_to_lower_ahs": {
+        "state_codes": [],
+        "relationship_codes": ["strengthen_seehcp_to_lower_ahs"],
+        "label": "Strengthen healthcare → lower AHS pathway",
+    },
+    "s8_weaken_outness_to_ahs_feedback": {
+        "state_codes": [],
+        "relationship_codes": ["weaken_outness_to_ahs_feedback"],
+        "label": "Weaken outness → AHS feedback",
     },
     "s9_combined_stigma_package": {
         "state_codes": ["reduce_ahs", "reduce_gss", "reduce_family_stigma"],
         "relationship_codes": [
-            "weaken_stigma_to_care",
-            "weaken_stigma_to_prep",
-            "weaken_stigma_to_hivtest",
+            "weaken_ahs_to_prep",
+            "weaken_ahs_to_disclosure",
+            "weaken_ahs_to_hivtest",
         ],
         "label": "Combined stigma package",
     },
@@ -306,7 +306,7 @@ def make_example_plot(aggregate_csv: Path, output_path: Path, indicator: str = "
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate paired v7 scenario uncertainty impacts vs baseline")
-    parser.add_argument("--standardized-input", type=Path, default=Path("standardized_input_v7.npz"))
+    parser.add_argument("--standardized-input", type=Path, default=Path("standardized_input_v8.npz"))
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/v7_scenario_results_2036"))
     parser.add_argument("--endpoint-year", type=int, default=2036)
     parser.add_argument("--n-samples", type=int, default=500)

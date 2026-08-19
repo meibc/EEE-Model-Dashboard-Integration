@@ -10,3 +10,5 @@ class SEMParams:
     """SEM parameters for one geography."""
 
     J: np.ndarray
+    drift: np.ndarray | None = None
+    reference_probs: np.ndarray | None = None

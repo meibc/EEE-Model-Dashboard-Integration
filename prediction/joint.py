@@ -34,7 +34,7 @@ class JointRunner:
         model_years: np.ndarray | None = None,
         state_intervention_codes: list[str] | None = None,
         relationship_intervention_codes: list[str] | None = None,
-        intervention_duration_steps: int = 1,
+        intervention_duration_steps: int = 3,
         hivtest_var: str = "hivtest12",
         prep_var: str = "prep_used",
         risk_var: str = "risk_behavior",
@@ -123,23 +123,31 @@ class JointRunner:
         J_fit = np.asarray(fit.J, dtype=float)
         J = J_fit[:, :, -1] if J_fit.ndim == 3 else J_fit
 
+        reference_probs = getattr(fit, "reference_probs", None)
+        predictor = Predictor(reference_probs=reference_probs)
+        ref_logits = predictor.reference_logits
+        if ref_logits is None:
+            ref_logits = np.zeros(J.shape[0], dtype=float)
+
         y0 = np.asarray(unit.amis_values[:, 0], dtype=float)
-        x0 = self.transforms.logit(y0)
-        u = np.zeros(J.shape[0], dtype=float)
+        x0 = self.transforms.logit(y0) - ref_logits
+        u = np.zeros(J.shape[0], dtype=float) if getattr(fit, "drift", None) is None else np.asarray(fit.drift, dtype=float)
 
         # Always roll out on the full SEM horizon used for CDC alignment/model years.
         # Using legacy prediction length can truncate trajectory and nullify interventions.
         n_steps = len(self._sem_years)
 
+        baseline_probs, _ = predictor.predict_trajectory(J, x0, u, n_steps)
         state_iv, rel_iv = self._get_interventions(unit_id)
 
-        ypred, _ = self.predictor.predict_trajectory(
+        ypred, _ = predictor.predict_trajectory(
             J,
             x0,
             u,
             n_steps,
             state_interventions=state_iv,
             rel_interventions=rel_iv,
+            baseline_probs=baseline_probs,
         )
         return ypred
 
@@ -202,7 +210,7 @@ class UncertaintyRunner:
         model_years: np.ndarray | None = None,
         state_intervention_codes: list[str] | None = None,
         relationship_intervention_codes: list[str] | None = None,
-        intervention_duration_steps: int = 1,
+        intervention_duration_steps: int = 3,
         v_names: list[str] | None = None,
         hivtest_var: str = "hivtest12",
         prep_var: str = "prep_used",
@@ -295,22 +303,28 @@ class UncertaintyRunner:
         J = np.asarray(sem_params.J, dtype=float)
 
         unit = self.units[unit_id]
+        predictor = Predictor(reference_probs=sem_params.reference_probs)
+        ref_logits = predictor.reference_logits
+        if ref_logits is None:
+            ref_logits = np.zeros(J.shape[0], dtype=float)
 
         y0 = np.asarray(unit.amis_values[:, 0], dtype=float)
-        x0 = self.transforms.logit(y0)
+        x0 = self.transforms.logit(y0) - ref_logits
 
-        u = np.zeros(J.shape[0], dtype=float)
+        u = np.zeros(J.shape[0], dtype=float) if sem_params.drift is None else np.asarray(sem_params.drift, dtype=float)
         n_steps = len(self._sem_years)
 
+        baseline_probs, _ = predictor.predict_trajectory(J, x0, u, n_steps)
         state_iv, rel_iv = self._get_interventions(unit_id)
 
-        ypred, _ = self.predictor.predict_trajectory(
+        ypred, _ = predictor.predict_trajectory(
             J,
             x0,
             u,
             n_steps,
             state_interventions=state_iv,
             rel_interventions=rel_iv,
+            baseline_probs=baseline_probs,
         )
 
         return ypred

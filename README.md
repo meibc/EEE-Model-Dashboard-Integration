@@ -35,7 +35,9 @@ The runtime reads prepared standardized inputs and parameters, and supports dete
 ### 1. Input
 
 Required file:
-- `standardized_input.npz`
+- `standardized_input_v8.npz`
+
+This is the current standardized runtime artifact. Older `standardized_input.npz` / v7 artifacts are legacy inputs and do not contain the centered-logit SEM drift fields required by the current runtime.
 
 Details on the file structure are below. 
 
@@ -44,7 +46,7 @@ Details on the file structure are below.
 Execution path:
 - `cli.py` parses arguments
 - `runner.py` dispatches deterministic or uncertainty mode
-- `input/standardized_runtime.py` reads `standardized_input.npz`
+- `input/standardized_runtime.py` reads `standardized_input_v8.npz`
 - `prediction/joint.py` runs SEM + CDC coupling
 - `prediction/intervention.py` applies intervention effects when enabled
 
@@ -61,7 +63,7 @@ Optional outputs:
 ## Project Structure
 
 ### Primary Runtime Files
-- `standardized_input.npz`: required runtime input
+- `standardized_input_v8.npz`: required runtime input
 - `cli.py`: command-line entrypoint
 - `config.py`: runtime configuration and validation
 - `runner.py`: orchestration (`run_prediction`)
@@ -79,7 +81,7 @@ Optional outputs:
 ├── alignment.py
 ├── plotting.py
 ├── requirements.txt
-├── standardized_input.npz
+├── standardized_input_v8.npz
 ├── input/
 │   ├── __init__.py
 │   ├── loaders.py
@@ -103,15 +105,17 @@ Optional outputs:
     └── unit.py
 ```
 
-## `standardized_input.npz` Schema
+## `standardized_input_v8.npz` Schema
+
+The current v8 artifact is `standardized_input_v8.npz`. It contains 49 geographies, 8 SEM variables, 500 SEM uncertainty draws, and 2000 CDC posterior draws.
 
 ### Schema Blocks
 - index metadata (what each axis means)
 - year axes (what timelines exist)
-- SEM observed (for plotting)
-- SEM parameters (for prediction)
-- CDC raw input series (for plotting)
-- CDC posterior parameter samples (for uncertainty prediction)
+- SEM observed trajectories and fitted SEM parameters
+- CDC raw input series
+- CDC posterior parameter samples
+- centered-logit SEM reference probabilities and drift terms
 
 ### Axis Symbols
 - `G`: number of geographies
@@ -142,21 +146,65 @@ Optional outputs:
 
 - `sem_obs` `(G, M, T_sem_obs)`: observed SEM values
 - `sem_pred` `(G, M, T_sem_pred)`: baseline SEM trajectory values
+- `sem_reference_probs` `(M,)`: reference probabilities used to center the SEM logit state space
 - `sem_fit_J_last` `(G, M, M)`: fitted SEM matrix used for deterministic rollout
+- `sem_fit_drift` `(G, M)`: fitted SEM drift vector used for deterministic rollout
 - `sem_J_samples` `(S_sem, G, M, M)`: SEM posterior samples for uncertainty mode
+- `sem_drift_samples` `(S_sem, G, M)`: SEM drift samples for uncertainty mode
+
+The SEM runtime uses the centered-logit state
+
+```text
+x_t = logit(p_t) - logit(p_ref)
+x_{t+1} = J_g x_t + c_g
+p_t = inverse_logit(x_t + logit(p_ref))
+```
+
+where `J_g` is the geography-specific fitted SEM matrix and `c_g` is the geography-specific drift vector.
 
 ### CDC Raw Block
 
 - `cdc_raw_native` `(G, K, T_cdc_obs)`: raw CDC series on observed years (used for plotting observed points and forecast split)
 - `cdc_raw` `(G, K, T_model)`: CDC raw series aligned to model years (used in model computations)
 
-### CDC Posterior Block
+### CDC Posterior and Fixed Parameter Block
 
 - `cdc_beta` `(S_cdc, G)`: posterior samples for `beta`
 - `cdc_alpha` `(S_cdc, G)`: posterior samples for `alpha`
 - `cdc_kdx` `(S_cdc, G)`: posterior samples for `kdx`
 - `cdc_U0` `(S_cdc, G)`: posterior samples for `U0`
-- `cdc_kappa_prep` `(G,)`: per-geo PrEP scaling constant
+- `cdc_post_multiplier` `(S_cdc, G)`: posterior multiplier samples used in the CDC prediction equation
+- `cdc_kappa_prep` `(G,)`: per-geography PrEP scaling constant
+- `cdc_risk0` `(G,)`: per-geography baseline CDC risk value used in the CDC prediction equation
+
+### Exact v8 Keys
+
+```text
+schema_version          (1,)
+geo_ids                 (49,)
+model_years             (20,)
+cdc_native_years        (6,)
+sem_obs_years           (4,)
+sem_pred_years          (4,)
+sem_v_names             (8,)
+cdc_raw_names           (6,)
+sem_obs                 (49, 8, 4)
+sem_pred                (49, 8, 4)
+sem_fit_J_last          (49, 8, 8)
+sem_fit_drift           (49, 8)
+sem_reference_probs     (8,)
+sem_J_samples           (500, 49, 8, 8)
+sem_drift_samples       (500, 49, 8)
+cdc_raw                 (49, 6, 20)
+cdc_raw_native          (49, 6, 6)
+cdc_beta                (2000, 49)
+cdc_alpha               (2000, 49)
+cdc_kdx                 (2000, 49)
+cdc_U0                  (2000, 49)
+cdc_post_multiplier     (2000, 49)
+cdc_kappa_prep          (49,)
+cdc_risk0               (49,)
+```
 
 ## Setup
 
@@ -168,11 +216,11 @@ pip install -r requirements.txt
 
 ## Run Commands
 
-- Assumption: `standardized_input.npz` exists at repo root.
+- Assumption: `standardized_input_v8.npz` exists at repo root.
 
 ### CLI Options
 
-- `--standardized-input <path>`: path to standardized input file (default: `standardized_input.npz`)
+- `--standardized-input <path>`: path to standardized input file (default: `standardized_input_v8.npz`)
 - `--mode {deterministic,uncertainty}`: run type
 - `--scenario-mode {baseline,intervention}`: scenario to run
 - `--target-end-year <year>`: truncate forecast horizon to this year (must be <= max year in input)
@@ -203,7 +251,7 @@ python -m cli \
   --scenario-mode intervention \
   --units NY \
   --state-codes reduce_ahs \
-  --relationship-codes weaken_stigma_to_hivtest
+  --relationship-codes weaken_ahs_to_hivtest
 ```
 
 Uncertainty run:
@@ -215,7 +263,7 @@ python -m cli --mode uncertainty --scenario-mode baseline --units NY --n-samples
 Custom standardized input path:
 
 ```bash
-python -m cli --standardized-input /path/to/standardized_input.npz --mode deterministic --units NY
+python -m cli --standardized-input /path/to/standardized_input_v8.npz --mode deterministic --units NY
 ```
 
 ## Plotting
@@ -234,7 +282,7 @@ python -m cli \
   --scenario-mode intervention \
   --units NY \
   --state-codes reduce_ahs \
-  --relationship-codes weaken_stigma_to_hivtest \
+  --relationship-codes weaken_ahs_to_hivtest \
   --plot --plot-compare-baseline --plot-dir plots
 ```
 
@@ -263,10 +311,30 @@ python -m cli --mode uncertainty --units NY --n-samples 100 --plot --plot-dir pl
 Definition file:
 - `prediction/codebooks.py`
 
-State codes apply variable-level shifts.
-Relationship codes modify SEM coupling terms.
+State codes apply variable-level probability changes. Current stigma-reduction scenarios reduce the target stigma probability by 50% relative to the baseline SEM trajectory for that geography.
+
+Relationship codes modify SEM coupling terms in `J`. Weakening scenarios attenuate a pathway by 50%; strengthening scenarios multiply a pathway by 1.5.
+
+All interventions ramp over `RuntimeConfig.intervention_duration_steps` SEM steps. The default is 3 SEM steps. This is intentionally configured in `config.py` rather than exposed as a CLI option.
 
 If a code references a variable not present in `sem_v_names`, that intervention is skipped.
+
+### Current State Intervention Codes
+
+- `reduce_ahs`: reduce anticipated healthcare stigma by 50%
+- `reduce_gss`: reduce general social stigma by 50%
+- `reduce_family_stigma`: reduce family stigma by 50%
+
+### Current Relationship Intervention Codes
+
+- `weaken_ahs_to_prep`: weaken AHS -> PrEP pathway by 50%
+- `weaken_ahs_to_disclosure`: weaken AHS -> outness pathway by 50%
+- `strengthen_outness_to_prep`: strengthen outness -> PrEP linkage by 50%
+- `strengthen_outness_to_hivtest`: strengthen outness -> HIV testing linkage by 50%
+- `strengthen_seehcp_to_hivtest`: strengthen healthcare -> HIV testing linkage by 50%
+- `weaken_ahs_to_hivtest`: weaken AHS -> HIV testing pathway by 50%
+- `strengthen_seehcp_to_lower_ahs`: strengthen healthcare -> lower AHS pathway by 50%
+- `weaken_outness_to_ahs_feedback`: weaken outness -> AHS stigma feedback by 50%
 
 ### Intervention Examples
 
@@ -287,7 +355,7 @@ python -m cli \
   --mode deterministic \
   --scenario-mode intervention \
   --units NY \
-  --relationship-codes weaken_stigma_to_hivtest
+  --relationship-codes weaken_ahs_to_hivtest
 ```
 
 Combined state + relationship interventions:
@@ -297,8 +365,8 @@ python -m cli \
   --mode deterministic \
   --scenario-mode intervention \
   --units NY \
-  --state-codes reduce_ahs increase_seehcp \
-  --relationship-codes weaken_stigma_to_hivtest
+  --state-codes reduce_ahs reduce_gss \
+  --relationship-codes weaken_ahs_to_prep weaken_ahs_to_hivtest
 ```
 
 Intervention in uncertainty mode:
@@ -311,14 +379,14 @@ python -m cli \
   --n-samples 500 \
   --seed 123 \
   --state-codes reduce_ahs \
-  --relationship-codes weaken_stigma_to_hivtest
+  --relationship-codes weaken_ahs_to_hivtest
 ```
 
 ## Troubleshooting
 
 ### Missing Input File
 - error: `Missing standardized input: ...`
-- fix: place `standardized_input.npz` at repo root or pass `--standardized-input <path>`
+- fix: place `standardized_input_v8.npz` at repo root or pass `--standardized-input <path>`
 
 ### Target Year Too Large
 - error: `target_end_year=... exceeds standardized_input max year ...`
